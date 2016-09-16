@@ -1,0 +1,10 @@
+#!/Users/meiera/Documents/pythoncode/web_dev/flask/bin/python3
+# EASY-INSTALL-ENTRY-SCRIPT: 'ZODB==5.0.0','console_scripts','fsdump'
+__requires__ = 'ZODB==5.0.0'
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('ZODB==5.0.0', 'console_scripts', 'fsdump')()
+    )

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MAKE YOUR PICK</title>
+</head>
+<body>
+        {% for message in get_flashed_messages() %}
+            {{ message }}
+        {% endfor %}
+
+
+        
+<form method="POST" action="/">
+    {{ form.csrf_token }}
+    {{ form.MyField.label }} {{ form.MyField }}
+    <input type="submit" value="Go">
+</form>
+
+</body>
+</html>

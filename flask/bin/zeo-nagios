@@ -1,0 +1,10 @@
+#!/Users/meiera/Documents/pythoncode/web_dev/flask/bin/python3
+# EASY-INSTALL-ENTRY-SCRIPT: 'ZEO==5.0.1','console_scripts','zeo-nagios'
+__requires__ = 'ZEO==5.0.1'
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('ZEO==5.0.1', 'console_scripts', 'zeo-nagios')()
+    )
