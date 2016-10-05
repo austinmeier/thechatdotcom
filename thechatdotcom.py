@@ -5,7 +5,7 @@ from flask_login import UserMixin, LoginManager, current_user, login_required, l
 from flask_wtf import Form
 from wtforms import StringField, SelectField, validators
 from hashlib import md5
-from flaskext.zodb import ZOBDB
+
 
 
 
@@ -38,10 +38,10 @@ app = Flask(__name__)
 SECRET_KEY = "Everyone knows this"
 DEBUG = True
 
-db = ZOBDB(app)
+
 
 app.config.from_object(__name__)
-app.config['ZODB_STORAGE'] = 'file://app.fs'
+
 login_manager = LoginManager()
 
 
@@ -127,7 +127,7 @@ def submitpick():
     form = PickForm()
     if form.validate_on_submit():
         flash('thanks for the pick')
-
+        return render_template('index')
     return render_template('submitpick.html', form = form)
 
 
