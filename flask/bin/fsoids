@@ -1,10 +1,11 @@
-#!/Users/meiera/Documents/pythoncode/web_dev/flask/bin/python3
-# EASY-INSTALL-ENTRY-SCRIPT: 'ZODB==5.0.0','console_scripts','fsoids'
-__requires__ = 'ZODB==5.0.0'
+#!/Users/austinmeier/Documents/jaiswal/git/thechatdotcom/flask/bin/python3
+
+# -*- coding: utf-8 -*-
+import re
 import sys
-from pkg_resources import load_entry_point
+
+from ZODB.scripts.fsoids import main
 
 if __name__ == '__main__':
-    sys.exit(
-        load_entry_point('ZODB==5.0.0', 'console_scripts', 'fsoids')()
-    )
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())
