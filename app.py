@@ -1,125 +1,80 @@
 
-# import the Flask class from the flask module
-from flask import Flask, render_template, redirect, url_for, request, session, flash
-from functools import wraps
-from flask_login import UserMixin, LoginManager, current_user, login_required, login_user
 from flask_wtf import Form
 from wtforms import StringField, SelectField, validators
-from hashlib import md5
+from flask import Flask, redirect, url_for, render_template, flash
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user,\
+    current_user, login_required
+from oauth import OAuthSignIn
 
 
-class User(UserMixin):
-    def __init__(self, name, id, active=True):
-        self.name = name
-        self.id = id
-        self.active = active
-
-    def is_active(self):
-        return self.active
-
-
-
-
-
-
-user_dict = {'austin': User('austin1','37b51d194a7513e45b56f6524f2d51f2'), 'admin':User('admin','37b51d194a7513e45b56f6524f2d51f2')}
-
-USERS = {
-    1: User(u"Austin", 1),
-    2: User(u"Steve", 2),
-    3: User(u"Ado", 3, ),
-    4: User(u"Lord Hamilton", 4, ),
-    5: User(u"Burt", 5, ),
-    6: User(u"Robotobo", 6, ),
-    7: User(u"Bubbs", 7, )
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'top secret!'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+app.config['OAUTH_CREDENTIALS'] = {
+    'facebook': {
+        'id': '1194113453996121',
+        'secret': '08790eb0f7a9f25a63d3398cb0c05bf0'
+    },
+    'twitter': {
+        'id': '3RzWQclolxWZIMq5LJqzRZPTl',
+        'secret': 'm9TEd58DSEtRrZHpz2EjrV9AhsBRxKMo8m3kuIZj3zLwzwIimt'
+    }
 }
 
-USER_NAMES = {u.name:u for u in USERS.values()}
+db = SQLAlchemy(app)
+lm = LoginManager(app)
+lm.login_view = 'index'
 
 
-
-# create the application object
-app = Flask(__name__)
-
-app.secret_key = "Flim flam"
-
-
-# login_manager = LoginManager()
-#
-# login_manager.login_view = "login"
-# login_manager.login_message = u"Please log in to access this page."
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    social_id = db.Column(db.String(64), nullable=False, unique=True)
+    nickname = db.Column(db.String(64), nullable=False)
+    email = db.Column(db.String(64), nullable=True)
 
 
+@lm.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
-def login_required(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            return f(*args, **kwargs)
-        else:
-            flash('You need to log in to submit your pick')
-            return redirect(url_for('login'))
-    return wrap
 
-# use decorators to link the function to a url
 @app.route('/')
-@login_required
-def home():
-    #return "Hello, World!"  # return a string
-    return render_template('index.html')  # render a template
-
-@app.route('/welcome')
-def welcome():
-    return render_template('welcome.html')  # render a template
-
-
-#class User()
-
-# route for handling the login page logic
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        pswd = md5(request.form['password'].encode('utf-8')).hexdigest()
-        username = request.form['username']
-        if username in USER_NAMES and pswd == '37b51d194a7513e45b56f6524f2d51f2':
-            login_user(USER_NAMES[username])
-            flash('You are now logged in as %s' %username)
-            return render_template(url_for('submitpick'))
-        else:
-            error = "there was an error"
-            flash('Sorry, but we could not log you in.')
-
-
-
-
-
-
-
-
-
-
-
-
-        # if request.form['username'] not in user_dict.keys() or pswd != user_dict[str(request.form['username'])].password:
-        #     error = 'Invalid Credentials. Please try again.'
-        # else:
-        #     session['logged_in'] = True
-        #     user = request.form['username'].encode('utf-8')
-        #     session['username'] = User[user].username
-        #     flash('You are now logged in as %s.' % session['username'])
-        #     return redirect(url_for('home'))
-    return render_template('login.html', error=error)
-
+def index():
+    return render_template('index.html')
 
 
 @app.route('/logout')
-@login_required
 def logout():
-    session.pop('logged_in', None)
-    flash('you are now logged out')
-    return redirect(url_for('welcome'))
+    logout_user()
+    return redirect(url_for('index'))
 
+
+@app.route('/authorize/<provider>')
+def oauth_authorize(provider):
+    if not current_user.is_anonymous:
+        return redirect(url_for('index'))
+    oauth = OAuthSignIn.get_provider(provider)
+    return oauth.authorize()
+
+
+@app.route('/callback/<provider>')
+def oauth_callback(provider):
+    if not current_user.is_anonymous:
+        return redirect(url_for('index'))
+    oauth = OAuthSignIn.get_provider(provider)
+    social_id, username, email = oauth.callback()
+    if social_id is None:
+        flash('Authentication failed.')
+        return redirect(url_for('index'))
+    user = User.query.filter_by(social_id=social_id).first()
+    if not user:
+        user = User(social_id=social_id, nickname=username, email=email)
+        db.session.add(user)
+        db.session.commit()
+    login_user(user, True)
+    return redirect(url_for('index'))
 
 
 class PickForm(Form):
@@ -177,4 +132,5 @@ def submitpick():
 
 # start the server with the 'run()' method
 if __name__ == '__main__':
+    db.create_all()
     app.run(debug=True)
